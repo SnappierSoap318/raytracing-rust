@@ -5,6 +5,7 @@ pub mod material;
 pub mod ray;
 pub mod sphere;
 pub mod vec3;
+mod Material;
 
 use image;
 use indicatif::{ProgressBar, ProgressStyle};
@@ -13,12 +14,11 @@ use rayon::prelude::*;
 
 use crate::camera::Camera;
 use crate::hittable::{hit_world, HitRecord};
-use crate::material::{Material, Properties};
 use crate::ray::Ray;
 use crate::sphere::Sphere;
 use crate::vec3::Vec3;
 
-use material::{Lambertian, Metal};
+use material::{Dielectric, Lambertian, Metal, Properties};
 
 use Vec3 as color;
 
@@ -32,9 +32,9 @@ fn ray_colour(ray: Ray, world: Vec<Sphere>, depth: i32) -> Vec3 {
         Some(rec) => {
             let (scattered, attenuation) = rec.material.scatter(ray, rec);
 
-            0.5 * match scattered {
+            match scattered {
                 Some(scattered) => attenuation * ray_colour(scattered, world, depth - 1),
-                None => Vec3::new(0.0, 0.0, 0.0),
+                None => color::new(0.0, 0.0, 0.0),
             }
         }
         _ => {
@@ -52,10 +52,10 @@ fn main() {
 
     // Image Specs
     let aspect_ratio = 16.0 / 9.0;
-    let image_width = 3840;
+    let image_width = 1920;
     let image_height = (image_width as f64 / aspect_ratio) as u32;
-    let samples_per_pixel = 16;
-    let depth = 128;
+    let samples_per_pixel = 100;
+    let depth = 100;
 
     print!("Aspect Ratio: {} \n", aspect_ratio);
     print!("Image Height: {} \n", image_height);
@@ -73,29 +73,34 @@ fn main() {
     let mut world = Vec::new();
 
     let mat_ground = Lambertian::new(color::new(0.8, 0.8, 0.0));
-    let mat_center = Lambertian::new(color::new(0.7, 0.3, 0.3));
-    let mat_left = Metal::new(color::new(0.8, 0.8, 0.8));
-    let mat_right = Metal::new(color::new(0.8, 0.6, 0.2));
+    let mat_center = Lambertian::new(color::new(0.1, 0.2, 0.5));
+    let mat_left = Dielectric::new(1.5);
+    let mat_right = Metal::new(color::new(0.8, 0.6, 0.2), 1.0);
 
     world.push(Sphere::new(
         Vec3::new(0.0, -100.5, -1.0),
         100.0,
-        Material::Lambertian(mat_ground),
+        material::Material::Lambertian(mat_ground),
     ));
     world.push(Sphere::new(
         Vec3::new(0.0, 0.0, -1.0),
         0.5,
-        Material::Lambertian(mat_center),
+        material::Material::Lambertian(mat_center),
     ));
     world.push(Sphere::new(
         Vec3::new(-1.0, 0.0, -1.0),
         0.5,
-        Material::Metal(mat_left),
+        material::Material::Dielectric(mat_left),
+    ));
+    world.push(Sphere::new(
+        Vec3::new(-1.0, 0.0, -1.0),
+        -0.4,
+        material::Material::Dielectric(mat_left),
     ));
     world.push(Sphere::new(
         Vec3::new(1.0, 0.0, -1.0),
         0.5,
-        Material::Metal(mat_right),
+        material::Material::Metal(mat_right),
     ));
     // Camera
     let cam = Camera::new(
@@ -141,5 +146,5 @@ fn main() {
     imagebuf = image::imageops::flip_horizontal(&imagebuf);
 
     println!("Saving to Output.png");
-    imagebuf.save(format!("images/output0.png",)).unwrap();
+    imagebuf.save(format!("output.png",)).unwrap();
 }
