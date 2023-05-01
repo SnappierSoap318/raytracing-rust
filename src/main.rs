@@ -54,8 +54,8 @@ fn main() {
     let aspect_ratio = 16.0 / 9.0;
     let image_width = 1920;
     let image_height = (image_width as f64 / aspect_ratio) as u32;
-    let samples_per_pixel = 100;
-    let depth = 100;
+    let samples_per_pixel = 20;
+    let depth = 50;
 
     print!("Aspect Ratio: {} \n", aspect_ratio);
     print!("Image Height: {} \n", image_height);
@@ -104,14 +104,11 @@ fn main() {
     ));
     // Camera
     let cam = Camera::new(
+        Vec3::new(-2.0, 2.0, 1.0),
+        Vec3::new(0.0, 0.0, -1.0),
+        Vec3::new(0.0,1.0,0.0),
         aspect_ratio,
-        2.0,
-        1.0,
-        Vec3 {
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-        },
+        20.0,
     );
     //Image buffer
     let mut imagebuf = image::ImageBuffer::new(image_width, image_height);
