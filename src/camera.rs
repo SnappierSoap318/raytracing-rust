@@ -1,35 +1,38 @@
-use crate::ray::Ray;
-use crate::vec3::Vec3;
+use crate::utils;
+use bvh::ray::Ray;
+use bvh::Vector3;
+
+
 #[derive(Copy, Clone)]
 pub struct Camera {
-    origin: Vec3,
-    horizontal: Vec3,
-    vertical: Vec3,
-    lower_left_corner: Vec3,
-    u: Vec3,
-    v: Vec3,
-    _w: Vec3,
-    lens_radius: f64,
+    origin: Vector3,
+    horizontal: Vector3,
+    vertical: Vector3,
+    lower_left_corner: Vector3,
+    u: Vector3,
+    v: Vector3,
+    _w: Vector3,
+    lens_radius: f32,
 }
 
 impl Camera {
     pub fn new(
-        look_from: Vec3,
-        look_at: Vec3,
-        vup: Vec3,
-        aspect_ratio: f64,
-        v_fov: f64,
-        aperture: f64,
-        focus_dist: f64,
+        look_from: Vector3,
+        look_at: Vector3,
+        vup: Vector3,
+        aspect_ratio: f32,
+        v_fov: f32,
+        aperture: f32,
+        focus_dist: f32,
     ) -> Camera {
-        let theta = v_fov * std::f64::consts::PI / 180.0;
-        let h = f64::tan(theta / 2.0);
+        let theta = v_fov * std::f32::consts::PI / 180.0;
+        let h = f32::tan(theta / 2.0);
 
         let viewport_height = 2.0 * h;
         let viewport_width = aspect_ratio * viewport_height;
 
-        let w = (look_from - look_at).unit_vector();
-        let u = (vup.cross(w)).unit_vector();
+        let w = (look_from - look_at).normalize();
+        let u = (vup.cross(w)).normalize();
         let v = w.cross(u);
 
         let origin = look_from;
@@ -51,9 +54,9 @@ impl Camera {
         }
     }
 
-    pub fn get_ray(self, s: f64, t: f64) -> Ray {
-        let rd = self.lens_radius * Vec3::rand_in_unit_disk();
-        let offset = self.u * rd.x() + self.v * rd.y();
+    pub fn get_ray(self, s: f32, t: f32) -> Ray {
+        let rd = self.lens_radius * utils::rand_in_unit_disk();
+        let offset = self.u * rd.x + self.v * rd.y;
 
         Ray::new(
             self.origin + offset,

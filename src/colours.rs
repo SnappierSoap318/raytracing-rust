@@ -1,13 +1,14 @@
 use num;
 
-use crate::vec3::Vec3;
+use bvh::Vector3;
 
-pub fn write_colours(colour: Vec3, samples_per_pixel: i32) -> [u8; 3] {
-    let mut r = colour.x();
-    let mut g = colour.y();
-    let mut b = colour.z();
 
-    let scale = 1.0 / samples_per_pixel as f64;
+pub fn write_colours(colour: Vector3, samples_per_pixel: i32) -> [u8; 3] {
+    let mut r = colour.x;
+    let mut g = colour.y;
+    let mut b = colour.z;
+
+    let scale = 1.0 / samples_per_pixel as f32;
     r = (r * scale).sqrt();
     g = (g * scale).sqrt();
     b = (b * scale).sqrt();
