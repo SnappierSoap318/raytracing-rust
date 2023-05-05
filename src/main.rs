@@ -5,7 +5,7 @@ pub mod material;
 pub mod ray;
 pub mod sphere;
 pub mod vec3;
-mod Material;
+pub mod world;
 
 use image;
 use indicatif::{ProgressBar, ProgressStyle};
@@ -14,11 +14,12 @@ use rayon::prelude::*;
 
 use crate::camera::Camera;
 use crate::hittable::{hit_world, HitRecord};
+
 use crate::ray::Ray;
 use crate::sphere::Sphere;
 use crate::vec3::Vec3;
 
-use material::{Dielectric, Lambertian, Metal, Properties};
+use material::Properties;
 
 use Vec3 as color;
 
@@ -52,64 +53,48 @@ fn main() {
 
     // Image Specs
     let aspect_ratio = 16.0 / 9.0;
-    let image_width = 1920;
+    let image_width = 3840;
     let image_height = (image_width as f64 / aspect_ratio) as u32;
-    let samples_per_pixel = 20;
-    let depth = 50;
+    let samples_per_pixel = 128;
+    let depth = 64;
+
+    // Camera Specs
+    let look_from = Vec3::new(13.0, 2.0, 3.0);
+    let look_at = Vec3::new(0.0, 0.0, 0.0);
+    let vup = Vec3::new(0.0, 1.0, 0.0);
+    let focus_dist = 10.0;
+    let aperture = 0.1;
+    let v_fov = 20.0;
 
     print!("Aspect Ratio: {} \n", aspect_ratio);
     print!("Image Height: {} \n", image_height);
     print!("Image Width: {} \n", image_width);
 
-    let prog = ProgressBar::new((image_height * image_width as u32) as u64);
+    println!("Creating World");
+    let world = world::make_world();
+    println!("Creating World Complete!");
+
+    let prog = ProgressBar::new(image_height as u64);
     prog.set_style(
-        ProgressStyle::with_template("[{elapsed_precise}] {msg} {bar:40.cyan/blue} {percent}%")
-            .unwrap()
-            .progress_chars("##-"),
+        ProgressStyle::with_template(
+            "[{elapsed_precise}] {msg} {bar:40.cyan/blue} {percent}% {pos:>7}/{len:7}",
+        )
+        .unwrap()
+        .progress_chars("##-"),
     );
     prog.set_message("Scanlines Complete: ");
 
-    // World
-    let mut world = Vec::new();
-
-    let mat_ground = Lambertian::new(color::new(0.8, 0.8, 0.0));
-    let mat_center = Lambertian::new(color::new(0.1, 0.2, 0.5));
-    let mat_left = Dielectric::new(1.5);
-    let mat_right = Metal::new(color::new(0.8, 0.6, 0.2), 1.0);
-
-    world.push(Sphere::new(
-        Vec3::new(0.0, -100.5, -1.0),
-        100.0,
-        material::Material::Lambertian(mat_ground),
-    ));
-    world.push(Sphere::new(
-        Vec3::new(0.0, 0.0, -1.0),
-        0.5,
-        material::Material::Lambertian(mat_center),
-    ));
-    world.push(Sphere::new(
-        Vec3::new(-1.0, 0.0, -1.0),
-        0.5,
-        material::Material::Dielectric(mat_left),
-    ));
-    world.push(Sphere::new(
-        Vec3::new(-1.0, 0.0, -1.0),
-        -0.4,
-        material::Material::Dielectric(mat_left),
-    ));
-    world.push(Sphere::new(
-        Vec3::new(1.0, 0.0, -1.0),
-        0.5,
-        material::Material::Metal(mat_right),
-    ));
     // Camera
     let cam = Camera::new(
-        Vec3::new(-2.0, 2.0, 1.0),
-        Vec3::new(0.0, 0.0, -1.0),
-        Vec3::new(0.0,1.0,0.0),
+        look_from,
+        look_at,
+        vup,
         aspect_ratio,
-        20.0,
+        v_fov,
+        aperture,
+        focus_dist,
     );
+
     //Image buffer
     let mut imagebuf = image::ImageBuffer::new(image_width, image_height);
 
@@ -126,13 +111,13 @@ fn main() {
             let v = (j as f64 + rng.gen_range(0.0..1.0)) / (image_height - 1) as f64;
 
             let r = cam.get_ray(u, v);
-
             pixel_color += ray_colour(r, world.clone(), depth);
         }
         let pixel = colours::write_colours(pixel_color, samples_per_pixel);
-        *f.2 = image::Rgb([pixel.x() as u8, pixel.y() as u8, pixel.z() as u8]);
-
-        prog.inc(1);
+        *f.2 = image::Rgb(pixel);
+        if i == j {
+            prog.inc(1);
+        }
     });
     println!("Render complete");
     // write image to file
