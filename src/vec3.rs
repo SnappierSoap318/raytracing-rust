@@ -65,12 +65,22 @@ impl Vec3 {
             z: rng.gen_range(min..max),
         }
     }
+    pub fn rand_in_unit_disk() -> Vec3 {
+        let mut rng = rand::thread_rng();
+        loop {
+            let p = Vec3::new(rng.gen_range(-1.0..1.0), rng.gen_range(-1.0..1.0), 0.0);
+            if p.length_squared() >= 1.0 {
+                continue;
+            }
+            return p;
+        }
+    }
     pub fn rand_in_unit_sphere() -> Vec3 {
         loop {
             let p = Vec3::rand_vec_range(-1.0, 1.0);
             if p.length_squared() >= 1.0 {
                 continue;
-            };
+            }
             return p;
         }
     }
